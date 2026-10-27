@@ -69,7 +69,7 @@ function SidebarFooter({ className, ...props }: HTMLAttributes<HTMLDivElement>) 
 }
 
 function SidebarMenu({ className, ...props }: HTMLAttributes<HTMLUListElement>) {
-  return <ul className={cn("flex gap-2 md:flex-col", className)} {...props} />;
+  return <ul className={cn("flex flex-col gap-1", className)} {...props} />;
 }
 
 function SidebarMenuItem({ className, ...props }: HTMLAttributes<HTMLLIElement>) {
