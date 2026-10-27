@@ -4,6 +4,12 @@ import { eq } from "drizzle-orm";
 import { db } from "@/db";
 import { users } from "@/db/schema";
 
+type GoogleProfileClaims = {
+  email_verified?: boolean;
+  picture?: string;
+  sub?: string;
+};
+
 export const authOptions: NextAuthOptions = {
   providers: [
     GoogleProvider({
@@ -16,17 +22,18 @@ export const authOptions: NextAuthOptions = {
   pages: { signIn: "/auth" },
   callbacks: {
     async signIn({ user, profile }) {
-      const googleId = profile?.sub ?? user.id;
+      const googleProfile = profile as GoogleProfileClaims | undefined;
+      const googleId = googleProfile?.sub ?? user.id;
 
       if (!googleId) return false;
 
       const now = new Date();
-      const emailVerified = profile?.email_verified ? now : null;
+      const emailVerified = googleProfile?.email_verified ? now : null;
       const userData = {
         googleId,
         email: user.email ?? null,
         name: user.name ?? null,
-        image: user.image ?? (typeof profile?.picture === "string" ? profile.picture : null),
+        image: user.image ?? (typeof googleProfile?.picture === "string" ? googleProfile.picture : null),
         emailVerified,
         updatedAt: now,
         lastSignInAt: now,
@@ -47,12 +54,13 @@ export const authOptions: NextAuthOptions = {
       return true;
     },
     async jwt({ token, user, profile }) {
+      const googleProfile = profile as GoogleProfileClaims | undefined;
       if (user) {
         token.name = user.name ?? token.name;
         token.email = user.email ?? token.email;
         token.picture = user.image ?? token.picture;
 
-        const googleId = profile?.sub ?? user.id;
+        const googleId = googleProfile?.sub ?? user.id;
         const [databaseUser] = await db
           .select({ role: users.role })
           .from(users)
@@ -62,8 +70,8 @@ export const authOptions: NextAuthOptions = {
         token.role = databaseUser?.role ?? "OPR";
       }
 
-      if (profile && typeof profile.picture === "string") {
-        token.picture = profile.picture;
+      if (googleProfile && typeof googleProfile.picture === "string") {
+        token.picture = googleProfile.picture;
       }
 
       return token;
